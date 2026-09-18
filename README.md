@@ -4,7 +4,11 @@ Türkçe yayıncı / klipper kampanya platformu. Bu dal, eski Sites sürümünde
 
 ## Durum
 
-Kaynak ve üretim derlemesi yerel olarak doğrulandı. Bu paket henüz Railway'e yüklenmedi; canlı adresi yoktur. Docker imajının Railway'de derlenmesi ve alan adı üzerinden kontrolü yayımlamanın son adımlarıdır.
+Canlı adres: https://klipfon-web-production.up.railway.app
+
+Railway Docker derlemesi ve yayını başarılıdır. `/app/data` yoluna 500 MB kalıcı volume bağlıdır. Telefon zorunlu kayıt, yerel üretim kimlik doğrulama ve mali kayıt testleri geçmiştir. Banka transferleri ve görüntülenme kontrolleri manueldir. Yönetici hesabı, site sahibi tarafından `/kurulum` üzerinden özel anahtarla etkinleştirilir. Anahtar kaynak depoda bulunmaz.
+
+18 Eylül 2026 tarihinde bu projenin etkin hesap limitleri otomatik volume yedeğine izin vermediğinden otomatik yedekleme kurulamadı. Gerçek para kabulünden önce özel ve tutarlı veritabanı/dekont yedekleme düzeni kurulmalıdır. Ödeme kabulü ilk kurulumda kapalıdır.
 
 ## Yerel çalışma
 
