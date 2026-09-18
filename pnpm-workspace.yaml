@@ -1,0 +1,16 @@
+minimumReleaseAge: 10080
+minimumReleaseAgeIgnoreMissingTime: false
+trustLockfile: false
+strictDepBuilds: true
+allowBuilds:
+  esbuild: true
+  fsevents: true
+  sharp: true
+  unrs-resolver: true
+  workerd: true
+enableGlobalVirtualStore: false
+packageImportMethod: clone-or-copy
+verifyDepsBeforeRun: false
+optimisticRepeatInstall: false
+overrides:
+  miniflare>sharp: 0.35.4

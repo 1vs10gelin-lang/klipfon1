@@ -1,0 +1,2 @@
+import {campaignSelect,rows,settings,json,apiFailure,now} from '@/lib/server';
+export async function GET(){try{const [campaigns,s]=await Promise.all([rows(campaignSelect+" WHERE c.status='active' AND c.deadline>? AND u.status='active' ORDER BY c.created_at DESC LIMIT 60",now()),settings()]);return json({campaigns,contactEmail:s.contactEmail,companyName:s.companyName,companyAddress:s.companyAddress,taxInfo:s.taxInfo,termsText:s.termsText,privacyText:s.privacyText,feeBps:s.feeBps});}catch(e){return apiFailure(e)}}

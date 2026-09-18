@@ -1,1 +1,57 @@
-# klipfon1
+# Klipfon
+
+Türkçe yayıncı / klipper kampanya platformu. Bu dal, eski Sites sürümünden bağımsız olarak Railway üzerinde Node.js 24 + Next.js + kalıcı SQLite ile çalışır.
+
+## Durum
+
+Kaynak ve üretim derlemesi yerel olarak doğrulandı. Bu paket henüz Railway'e yüklenmedi; canlı adresi yoktur. Docker imajının Railway'de derlenmesi ve alan adı üzerinden kontrolü yayımlamanın son adımlarıdır.
+
+## Yerel çalışma
+
+Node.js 24 ve pnpm 11.25.0 gerekir.
+
+```sh
+pnpm install --frozen-lockfile
+cp .env.example .env.local
+pnpm dev
+```
+
+Üretim: `pnpm build && pnpm start`. Üretimde `APP_ORIGIN` tam site adresi olmalıdır. Yerel test için `http://localhost:3000`; gerçek yayında HTTPS kullanılır. Sonda `/` olmamalı.
+
+## Railway kurulumu
+
+1. Kaynağı özel bir GitHub deposuna gönder. Gerçek müşteri verisi, `.env` ve veri klasörü depoya gönderilmez.
+2. Railway'de bu depodan servis oluştur. Dockerfile ve railway.json derleme / sağlık kontrolünü tanımlar.
+3. **İlk müşteri kaydından önce `/app/data` yoluna kalıcı volume bağla.** Tek servis kopyası kullan. Bu sürüm birden fazla replica veya bölgeye uygun değildir.
+4. Değişkenler: `DATA_DIR=/app/data`, `APP_ORIGIN=https://<gerçek-alan-adı>`, `KLIPFON_SETUP_SECRET=<rastgele-en-az-32-karakter>`. Kurulum anahtarı için `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` çalıştırılabilir. Anahtarı depoya veya herkese açık bir yere ekleme.
+5. Railway servis alan adını aç, `APP_ORIGIN` değerini bu adresle eşleştir ve deploy et. `/api/health` 200 dönmeli. Railway'nin verdiği `PORT` kullanılır.
+6. Siteye normal kayıt ol, kurtarma kodunu sakla. `/kurulum` sayfasında gizli kurulum anahtarını girerek bu hesabı ilk yönetici yap. Yönetici tek sefer kurulur. Kurulumdan sonra Railway'den kurulum anahtarını kaldır.
+7. Admin panelinde işletme, iletişim, banka IBAN/alıcı ve onaylı sözleşme metinlerini doldur. Bunlar tamamlanmadan ödeme kabulü açılmaz.
+8. Volume yedeklerini etkinleştir ve geri yüklemeyi dene. SQLite canlıyken yalnız ana `.sqlite` dosyasını kopyalama; tutarlı SQLite backup veya servis durdurularak tüm volume yedeği kullan. Dekontlar aynı volume içindeki `private` dizinindedir. Yedekleri özel tut.
+9. Gerçek para kabulünden önce HTTPS kayıt, çıkış, kurtarma, admin erişimi, dekont erişimi ve küçük tutarlı manuel banka mutabakatını canlıda kontrol et. Deploy/restart sonrası kayıtların kaldığını doğrula.
+
+Yeni özel domain bağlandığında DNS doğrulaması tamamlandıktan sonra `APP_ORIGIN` değerini değiştir; eski domain üzerinden yapılan yazma işlemleri kaynak kontrolü nedeniyle reddedilir.
+
+## İşleyiş
+
+- Kayıtta telefon zorunlu; biçimi sunucuda doğrulanır. SMS ve e-posta sahiplik doğrulaması yoktur.
+- E-posta/şifre girişi, scrypt şifre özeti, özel HTTP-only oturum çerezi. Parola sıfırlama için kayıt sırasında gösterilen tek kullanımlık kurtarma kodu vardır. Kod yenilendiğinde eski kod ve bütün oturumlar iptal olur. E-posta gönderimi yoktur.
+- Yayıncı, admin tarafından tanımlanan IBAN'a bankasından havale yapar, bildirim / dekont gönderir. Admin gerçek tahsilatı banka işlem referansıyla onaylayınca bakiye oluşur. Sistem banka hesabını otomatik okuyamaz.
+- Klipper kendi IBAN ve alıcı adını kaydeder. Hakediş sonrası çekim talep eder. Admin transferi bankadan yapar ve sonucunu kaydeder; otomatik havale yoktur.
+- Kampanya bütçesi, klip limiti, ön onay, sosyal hesap kontrolü, 14 günlük ölçüm ve 7 günlük inceleme dönemi vardır. Görüntülenme kontrolü ve sonuçlandırma manueldir.
+- Muhasebe kayıtları değiştirilemez; tekrar gönderilen işlemler ikinci kez bakiye oluşturmaz. Eşzamanlı katılımda bütçe aşımı SQLite transaction ve trigger ile engellenir.
+- Admin dışındaki hesaplar diğer kişilerin telefon, IBAN ve dekontlarını göremez.
+
+## Teknik sınırlar
+
+Bu sürüm tek sunuculu pilot içindir. SQLite, dekontlar, oturum ve hız sınırları kalıcı volume üzerinde saklanır. Yatay ölçek için veritabanı/nesne depolama geçişi gerekir. Küresel kayıt sınırı saatte 30, kimlik doğrulama sınırı dakikada 120 istektir; büyümeden önce IP bazlı kötüye kullanım koruması ve doğrulanmış e-posta/SMS akışı eklenmelidir. Banka hareketleriyle düzenli mutabakat işletme sorumluluğundadır.
+
+## Doğrulama
+
+```sh
+pnpm build
+python tests/financial_flow.py
+python tests/native_auth_smoke.py
+```
+
+HTTP testi geçici bir veritabanında localhost:3017 üzerinde üretim sunucusu açar; gerçek bankaya veya üçüncü kişiye işlem göndermez. Veri şeması `drizzle/*.sql` içinden transaction ile uygulanır. Uygulanmış migration dosyalarını değiştirme; yeni SQL dosyası ekle. SQLite trigger gövdeleri tek parça yürütülür.
