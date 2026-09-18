@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { LiveSupport } from "@/components/klipfon/live-support";
 
 export const metadata: Metadata = {
   title: "Klipfon — Klip üret. Paylaş. Kazan.",
@@ -17,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className="dark">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">{children}<LiveSupport /></body>
     </html>
   );
 }

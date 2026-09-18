@@ -38,6 +38,50 @@ Yeni özel domain bağlandığında DNS doğrulaması tamamlandıktan sonra `APP
 
 ## İşleyiş
 
+### Tawk.to canlı destek
+
+Tüm sayfalarda Klipfon renkleriyle bir destek menüsü vardır. Mevcut destek/itiraz
+formuna ve yardım merkezine bağlantı içerir. Tawk.to kodu yalnız kullanıcı canlı
+sohbet düğmesine bastığında yüklenir; site açılışında üçüncü taraf sohbet isteği
+yapılmaz. Müşteri telefonu, e-posta, IBAN veya bakiye bilgisi otomatik aktarılmaz.
+
+Site sahibinin sağladığı `6aadc798c048683449aa1362/default` widget'ı varsayılandır.
+Ek ortam değişkeni olmadan kullanılır. Farklı bir widget bağlamak için
+Tawk.to > Administration > Chat Widget içindeki Widget Code
+alanından `https://embed.tawk.to/PROPERTY_ID/WIDGET_ID` adresinin iki kimliğini al.
+Railway servis değişkenlerine `TAWK_PROPERTY_ID` ve `TAWK_WIDGET_ID` olarak ekle.
+Bunlar herkese açık widget kimlikleridir; hesap şifresi veya API anahtarı değildir.
+Sunucu yeniden başladığında yeni ayarlar okunur. Kimlikler eksik/geçersizse canlı
+sohbet düğmesi gösterilmez, mevcut yardım ve talep bağlantıları çalışmaya devam eder.
+
+Tawk.to panelinde Widget Appearance > Advanced ayarları:
+
+| Ayar | Değer |
+| --- | --- |
+| Header | `#2F2047` |
+| Header Text | `#FFFFFF` |
+| Agent Message / Agent Text | `#292437` / `#F3F3F7` |
+| Visitor Message / Visitor Text | `#36D6C4` / `#0B0C10` |
+| Konum | Sağ alt; masaüstü ve mobil önizlemede kontrol et |
+| Dil | Türkçe |
+| Başlık | Klipfon Destek |
+| Karşılama | Merhaba! Sana nasıl yardımcı olabiliriz? |
+
+Attention Grabber ve otomatik pencere açma tetikleyicilerini kapat; özel destek
+düğmesini kullanıyoruz. Çevrimdışı formunu etkinleştir ve “Şu an çevrimdışıyız.
+Mesajını ve e-posta adresini bırakabilirsin.” metnini kullan. Gerçek çalışma
+saatlerini Tawk.to panelinde tanımla. Operatör yanıtları Tawk.to üzerinden verilir;
+Klipfon ödeme/itiraz kayıtları kendi panelinde kalır.
+
+Sohbet içi renkler ve metinler Tawk.to panelinden ayarlanır; site CSS'i iframe
+içini değiştirmez. Widget bağlandıktan sonra gerçek çevrimiçi/çevrimdışı mesaj
+gönderimi, mobil görünüm ve operatör yanıtı ayrıca kontrol edilmelidir.
+
+Kaynaklar: https://developer.tawk.to/jsapi/ ve
+https://help.tawk.to/article/changing-the-appearance-of-the-chat-widget
+
+### Kampanya ve ödeme akışı
+
 - Kayıtta telefon zorunlu; biçimi sunucuda doğrulanır. SMS ve e-posta sahiplik doğrulaması yoktur.
 - E-posta/şifre girişi, scrypt şifre özeti, özel HTTP-only oturum çerezi. Parola sıfırlama için kayıt sırasında gösterilen tek kullanımlık kurtarma kodu vardır. Kod yenilendiğinde eski kod ve bütün oturumlar iptal olur. E-posta gönderimi yoktur.
 - Yayıncı, admin tarafından tanımlanan IBAN'a bankasından havale yapar, bildirim / dekont gönderir. Admin gerçek tahsilatı banka işlem referansıyla onaylayınca bakiye oluşur. Sistem banka hesabını otomatik okuyamaz.

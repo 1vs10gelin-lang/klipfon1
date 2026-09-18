@@ -1,0 +1,18 @@
+.klipfon-support{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom));z-index:40;font-family:Arial,Helvetica,sans-serif}
+.klipfon-support-trigger{display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:0 21px;list-style:none;cursor:pointer;border:1px solid #bca5ff66;border-radius:28px;background:linear-gradient(120deg,#7145cd,#2d626e);color:#fff;font-size:14px;font-weight:700;box-shadow:0 8px 30px #0007}
+.klipfon-support-trigger::-webkit-details-marker{display:none}
+.klipfon-support-trigger:hover{filter:brightness(1.12)}
+.klipfon-support-panel{position:absolute;right:0;bottom:68px;width:min(350px,calc(100vw - 32px));max-height:calc(100dvh - 120px - env(safe-area-inset-bottom));overflow:auto;background:#14151b;border:1px solid #51426c;border-radius:20px;box-shadow:0 20px 70px #0009;color:#f3f3f7}
+.klipfon-support-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:22px;background:linear-gradient(120deg,#2f2047,#143638);border-bottom:1px solid #3b3449}
+.klipfon-support-eyebrow{font-size:10px;letter-spacing:.12em;color:#8ee9de;font-weight:700}
+.klipfon-support-header h2{font-size:22px;margin:7px 0 0}
+.klipfon-support-header button{display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;border-radius:50%;border:1px solid #ffffff25;background:#ffffff0c;color:#fff}
+.klipfon-support-body{padding:20px;display:grid;gap:12px}
+.klipfon-support-body p{font-size:14px;line-height:1.6;margin:0 0 5px;color:#c5c2d3}
+.klipfon-support-chat{display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;border:0;border-radius:11px;background:#b99dfb;color:#180c2e;font:700 14px Arial,Helvetica,sans-serif;padding:12px}
+.klipfon-support-body a{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #30313c;border-radius:12px;color:#efedf7;font-size:14px;background:#1a1b23}
+.klipfon-support-body a:hover{border-color:#9a7ac5;background:#24212f}
+.klipfon-support-body small{display:block;color:#aba7bd;font-size:12px;margin-top:4px}
+.klipfon-support-body .klipfon-support-error{color:#ffb5c5;font-size:13px}
+body:has(.klipfon-support){padding-bottom:90px}
+@media(max-width:700px){.klipfon-support{right:16px;bottom:calc(16px + env(safe-area-inset-bottom))}.klipfon-support-trigger{width:54px;padding:0}.klipfon-support-trigger span{display:none}.klipfon-support-panel{bottom:66px}}
