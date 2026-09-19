@@ -40,7 +40,7 @@ with tempfile.TemporaryDirectory(prefix='klipfon-community-') as tmp:
     user('leader', 'İpek Klipper')
     user('runner', 'Deniz Edit')
     user('tie', 'Ege Klipper')
-    user('pending', 'PRIVATE PENDING', verified=0)
+    user('pending', 'Unverified Member', verified=0)
     user('suspended', 'PRIVATE SUSPENDED', status='suspended')
     user('admin', 'PRIVATE ADMIN', role='admin')
     sql.commit()
@@ -59,9 +59,9 @@ with tempfile.TemporaryDirectory(prefix='klipfon-community-') as tmp:
             assert sql.execute("SELECT bio FROM users WHERE id='leader'").fetchone() == ('',)
             assert sql.execute('SELECT COUNT(*) FROM klipfon_migrations').fetchone()[0] == len(list((ROOT/'drizzle').glob('*.sql')))
             initial, _ = request('/api/community')
-            assert initial['total'] == 4
+            assert initial['total'] == 5
             assert all(p['rank'] is None and p['views'] == 0 for p in initial['profiles'])
-            for uid in ['pending', 'suspended', 'admin', 'missing']:
+            for uid in ['suspended', 'admin', 'missing']:
                 request('/api/community/'+uid, expected=404)
                 request('/topluluk/'+uid, expected=404)
             sql.execute("UPDATE users SET bio=? WHERE id='leader'", ('Oyun, sohbet ve kısa hikâyeler. <script>alert(1)</script>',))
@@ -118,9 +118,9 @@ with tempfile.TemporaryDirectory(prefix='klipfon-community-') as tmp:
             assert request('/api/community/leader')[0]['profile']['views'] == 21000
             sql.execute("UPDATE users SET verified=0 WHERE id='leader'")
             sql.commit()
-            request('/api/community/leader', expected=404)
-            assert request('/api/community')[0]['total'] == 3
-            assert all(c['clipperId'] != 'leader' for c in request('/api/community/creator')[0]['clips'])
+            assert request('/api/community/leader')[0]['profile']['verified'] is False
+            assert request('/api/community')[0]['total'] == 5
+            assert any(c['clipperId'] == 'leader' for c in request('/api/community/creator')[0]['clips'])
             sql.execute("UPDATE users SET verified=1 WHERE id='leader'")
             measure('first', 100000)
             for i in range(26):
@@ -128,7 +128,7 @@ with tempfile.TemporaryDirectory(prefix='klipfon-community-') as tmp:
             sql.commit()
             first=request('/api/community?role=clipper')[0]
             second=request('/api/community?role=clipper&page=2')[0]
-            assert first['total'] == 29 and len(first['profiles']) == 24 and len(second['profiles']) == 5
+            assert first['total'] == 30 and len(first['profiles']) == 24 and len(second['profiles']) == 6
             assert not ({p['id'] for p in first['profiles']} & {p['id'] for p in second['profiles']})
             assert request('/api/community?page=999')[0]['page'] == 2
             # A normal user can edit their biography, but cannot submit counters or approval.
@@ -137,7 +137,7 @@ with tempfile.TemporaryDirectory(prefix='klipfon-community-') as tmp:
             profile=dict(action='profile',requestId=str(uuid.uuid4()),name='Editable User',bio='Yeni biyografim',phone='05321234567',socialUrl='https://youtube.com/@editable',iban='',accountName='',views=999999999,verified=True,rank=1)
             request('/api/action',profile,cookie)
             state=request('/api/state',cookie=cookie)[0]
-            assert state['user']['bio'] == 'Yeni biyografim' and state['user']['verified'] == 0 and state['communityProfile'] is None
+            assert state['user']['bio'] == 'Yeni biyografim' and state['user']['verified'] == 0 and state['communityProfile']['verified'] is False
             profile['requestId']=str(uuid.uuid4());profile['bio']='a'*301
             request('/api/action',profile,cookie,expected=400)
             sql.execute('UPDATE users SET verified=1 WHERE id=?',(state['user']['id'],));sql.commit()
@@ -145,13 +145,40 @@ with tempfile.TemporaryDirectory(prefix='klipfon-community-') as tmp:
             assert state['communityProfile']['views']==0 and state['communityProfile']['rank'] is None
             profile['requestId']=str(uuid.uuid4());profile['bio']='Biyografi';profile['socialUrl']='https://youtube.com/@changed'
             request('/api/action',profile,cookie)
-            request('/api/community/'+state['user']['id'],expected=404)
+            assert request('/api/community/'+state['user']['id'])[0]['profile']['verified'] is False
+            # Uploads are re-encoded images, public only for active accounts; receipts stay private.
+            import struct,zlib
+            def chunk(kind,data):
+                return struct.pack('>I',len(data))+kind+data+struct.pack('>I',zlib.crc32(kind+data)&0xffffffff)
+            png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',1,1,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(b'\x00\xff\x00\x00'))+chunk(b'IEND',b'')
+            def upload(payload, expected=200, origin=ORIGIN):
+                boundary='klipfon-test-boundary'
+                body=(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="photo.png"\r\nContent-Type: image/png\r\n\r\n').encode()+payload+f'\r\n--{boundary}--\r\n'.encode()
+                req=urllib.request.Request(ORIGIN+'/api/avatar',data=body,headers={'Origin':origin,'Cookie':cookie,'Content-Type':'multipart/form-data; boundary='+boundary})
+                try: response=urllib.request.urlopen(req)
+                except urllib.error.HTTPError as error: response=error
+                raw=response.read();assert response.status==expected,(response.status,raw)
+            upload(b'<svg onload="alert(1)"></svg>',400)
+            upload(png,403,'https://untrusted.test')
+            upload(png)
+            avatar=request('/api/community/'+state['user']['id'])[0]['profile']['avatarUrl']
+            with urllib.request.urlopen(ORIGIN+avatar) as response:
+                assert response.headers['Content-Type']=='image/webp'
+                assert response.read()[8:12]==b'WEBP'
+            assert request('/api/community/'+state['user']['id'])[0]['profile']['verified'] is False
+            uid=state['user']['id']
+            sql.execute("UPDATE users SET status='suspended' WHERE id=?",(uid,));sql.commit()
+            request('/api/avatar/'+uid,expected=404)
+            sql.execute("UPDATE users SET status='active' WHERE id=?",(uid,));sql.commit()
+            req=urllib.request.Request(ORIGIN+'/api/avatar',method='DELETE',headers={'Origin':ORIGIN,'Cookie':cookie})
+            assert urllib.request.urlopen(req).status==200
+            request('/api/avatar/'+uid,expected=404)
             request('/topluluk')
             # Optional local-only fixture copy for visual checks; never used in production.
             if os.environ.get('COMMUNITY_QA_DIR'):
                 target=Path(os.environ['COMMUNITY_QA_DIR']);target.mkdir(parents=True,exist_ok=True)
                 backup=sqlite3.connect(target/'klipfon.sqlite');sql.backup(backup);backup.close()
-            print('PASS: legacy migration, approved-only visibility, private-field exclusion, latest measurement totals, rejection, downward correction, per-role tied ranks, Turkish search, injection, pagination, profile editing, counter forgery, revoked approval, public pages.')
+            print('PASS: legacy migration, active-account visibility, private-field exclusion, latest measurement totals, rejection, downward correction, per-role tied ranks, Turkish search, injection, pagination, profile editing, counter forgery, revoked badge, public pages.')
         except Exception:
             log.seek(0);print(log.read().decode()[-5000:]);raise
         finally:

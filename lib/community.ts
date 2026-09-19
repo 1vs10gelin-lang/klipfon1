@@ -20,7 +20,7 @@ const communityCTE = `WITH public_clips AS (
  SELECT owner_id,COUNT(*) AS campaigns FROM campaigns
  WHERE status IN ('active','paused','closed') GROUP BY owner_id
 ), profiles AS (
- SELECT u.id,u.name,u.role,u.bio,u.social_url,u.created_at,
+ SELECT u.id,u.name,u.role,u.bio,u.social_url,u.verified,u.avatar_id,u.created_at,
  COALESCE(CASE WHEN u.role='clipper' THEN k.views ELSE c.views END,0) AS views,
  COALESCE(CASE WHEN u.role='clipper' THEN k.clips ELSE c.clips END,0) AS clip_count,
  COALESCE(CASE WHEN u.role='clipper' THEN k.campaigns ELSE a.campaigns END,0) AS campaign_count,
@@ -28,7 +28,7 @@ const communityCTE = `WITH public_clips AS (
  CASE WHEN u.role='clipper' THEN k.measured ELSE c.measured END AS last_measured_at
  FROM users u LEFT JOIN clipper_stats k ON k.user_id=u.id
  LEFT JOIN creator_stats c ON c.owner_id=u.id LEFT JOIN creator_campaigns a ON a.owner_id=u.id
- WHERE u.verified=1 AND u.status='active' AND u.role IN ('clipper','creator')
+ WHERE u.status='active' AND u.role IN ('clipper','creator')
 ), ranked AS (
  SELECT *,CASE WHEN views>0 THEN RANK() OVER(PARTITION BY role ORDER BY views DESC) ELSE NULL END AS rank
  FROM profiles
@@ -36,7 +36,7 @@ const communityCTE = `WITH public_clips AS (
 
 // Explicit allowlist: public endpoints must never serialize users.* or payments.
 function publicProfile(p:Row):CommunityProfile {
-  return {id:p.id,name:p.name,role:p.role,bio:p.bio,socialUrl:p.social_url,
+  return {id:p.id,name:p.name,role:p.role,bio:p.bio,socialUrl:p.social_url,verified:!!p.verified&&!!p.social_url,avatarUrl:p.avatar_id?'/api/avatar/'+encodeURIComponent(p.id)+'?v='+encodeURIComponent(p.avatar_id):'',
     joinedAt:p.created_at,views:p.views,clipCount:p.clip_count,campaignCount:p.campaign_count,
     partnerCount:p.partner_count,lastMeasuredAt:p.last_measured_at,rank:p.rank};
 }
@@ -67,7 +67,7 @@ export async function getCommunityDetail(id:string,params=new URLSearchParams())
   if(!profile)return null;
   const creator=profile.role==='creator';
   const where=` WHERE ${creator?'c.owner_id':'k.user_id'}=? AND k.status IN ('published','settled')
-    AND c.status IN ('active','paused','closed') AND u.verified=1 AND u.status='active'
+    AND c.status IN ('active','paused','closed') AND u.status='active'
     AND u.role='clipper'`;
   const from=' FROM clips k JOIN campaigns c ON c.id=k.campaign_id JOIN users u ON u.id=k.user_id';
   const total=Number((await one('SELECT COUNT(*) AS total'+from+where,id))?.total||0);

@@ -34,7 +34,8 @@ fail(lambda:db.execute("UPDATE deposits SET status='approved' WHERE id='deposit'
 campaign(db,'campaign');assert balance(db,'creator')==80000
 fail(lambda:campaign(db,'overspend',budget=100000),'BALANCE_LOW')
 assert db.execute("SELECT COUNT(*) FROM campaigns WHERE id='overspend'").fetchone()[0]==0
-fail(lambda:join(db,'bad','unverified'),'NOT_VERIFIED')
+join(db,'unverified-join','unverified')
+db.execute("UPDATE clips SET status='cancelled' WHERE id='unverified-join'")
 join(db,'clip','clipper');join(db,'clip2','second')
 fail(lambda:join(db,'overcapacity','third'),'CAPACITY_FULL')
 fail(lambda:db.execute("UPDATE campaigns SET status='closed' WHERE id='campaign'"),'CAMPAIGN_HAS_ACTIVE_CLIPS')

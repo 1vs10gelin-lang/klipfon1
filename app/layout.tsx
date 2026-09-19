@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "@/components/klipfon/operations.css";
 import { LiveSupport } from "@/components/klipfon/live-support";
 
 export const metadata: Metadata = {

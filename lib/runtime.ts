@@ -1,4 +1,4 @@
-import {DatabaseSync} from 'node:sqlite';
+import {DatabaseSync,backup} from 'node:sqlite';
 import {mkdirSync,readFileSync,readdirSync} from 'node:fs';
 import {mkdir,readFile,writeFile,unlink} from 'node:fs/promises';
 import {resolve,dirname,sep} from 'node:path';
@@ -37,3 +37,5 @@ export const database={prepare:(query:string)=>new Statement(query),async batch(
 function filePath(key:string){const base=resolve(root(),'private');const path=resolve(base,key);if(!path.startsWith(base+sep))throw Error('Invalid file key');return path;}
 export const bucket={async put(key:string,bytes:Uint8Array,_options?:unknown){const path=filePath(key);await mkdir(dirname(path),{recursive:true,mode:0o700});await writeFile(path,bytes,{mode:0o600,flag:'wx'});},async get(key:string){try{return {body:new Uint8Array(await readFile(filePath(key)))};}catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return null;throw e;}},async delete(key:string){try{await unlink(filePath(key));}catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;}}};
 export function allowedOrigin(req:Request){const configured=process.env.APP_ORIGIN||(process.env.RAILWAY_PUBLIC_DOMAIN?'https://'+process.env.RAILWAY_PUBLIC_DOMAIN:'');if(process.env.NODE_ENV==='production'&&!configured)throw Error('APP_ORIGIN is required.');const wanted=configured||new URL(req.url).origin;return req.headers.get('origin')===wanted;}
+
+export async function snapshotDatabase(destination:string){await backup(connection(),destination);}

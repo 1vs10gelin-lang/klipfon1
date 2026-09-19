@@ -1,6 +1,6 @@
 export type CommunityRole = 'clipper' | 'creator';
 export type CommunityProfile = {
-  id: string; name: string; role: CommunityRole; bio: string; socialUrl: string;
+  id: string; name: string; role: CommunityRole; bio: string; socialUrl: string; verified: boolean; avatarUrl: string;
   joinedAt: number; views: number; clipCount: number; campaignCount: number;
   partnerCount: number; lastMeasuredAt: number | null; rank: number | null;
 };
