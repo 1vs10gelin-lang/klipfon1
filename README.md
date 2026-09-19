@@ -38,6 +38,18 @@ Yeni özel domain bağlandığında DNS doğrulaması tamamlandıktan sonra `APP
 
 ## İşleyiş
 
+### Topluluk ve herkese açık profiller
+
+`/topluluk`, aktif ve sosyal hesabı yönetici tarafından onaylanmış klipper/yayıncıları listeler. Her üyenin `/topluluk/<kullanıcı-id>` bağlantısı vardır. Onay kaldırıldığında, hesap askıya alındığında veya sosyal hesap değiştirildiğinde profil gizlenir. Profil düzenleme ekranından herkese açık biyografi eklenebilir.
+
+- İsimle arama (Türkçe büyük/küçük harf), rol filtresi, görüntülenme/klip/yeni üye sıralaması ve sayfalama.
+- Görüntülenme, yayınlanmış veya kesinleşmiş kliplerin son yönetici ölçümündeki `eligible_views` toplamıdır. Ölçüm geçmişi toplanmaz. Reddedilen klipler sayılmaz; düzeltmeler toplamı aşağı da çekebilir.
+- Klipper seviyeleri: Yeni (0), Yükselen (10.000), Profesyonel (100.000), Elit (1.000.000), Efsane (10.000.000). Seviye; rozet, çerçeve rengi ve ilerlemeye yansır. Sıra hesap türü bazındadır; eşit görüntülenmeler aynı sırayı alır. Sıfır görüntülenmeli üyeye sıra verilmez.
+- Yayıncıda kampanya/klip/klipper sayısı ve görüntülenme; klipperda klip/kampanya/yayıncı sayısı görünür. Portföyde yalnızca onaylı, aktif klipperların yayınlanmış klipleri gösterilir.
+- Public API alanları açıkça seçilir. Telefon, e-posta, IBAN, banka alıcı adı, kazanç/bakiye, taslak ve ölçüm dayanakları aktarılmaz.
+- `0004_public_profiles.sql` yalnız biyografi alanını ve topluluk indeksini ekler; mevcut kayıt ve mali akışı değiştirmez. Sayfalar 60 saniyede ve pencereye dönüldüğünde yenilenir.
+- Kontrol: `pnpm build` sonrasında `python tests/community_flow.py` (geçici veritabanıyla; canlı veriye dokunmaz).
+
 ### Tawk.to canlı destek
 
 Tüm sayfalarda Klipfon renkleriyle bir destek menüsü vardır. Mevcut destek/itiraz

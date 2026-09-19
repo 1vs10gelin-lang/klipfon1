@@ -29,6 +29,13 @@
       "when": 1789750921510,
       "tag": "0003_native_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789812929569,
+      "tag": "0004_public_profiles",
+      "breakpoints": true
     }
   ]
 }
