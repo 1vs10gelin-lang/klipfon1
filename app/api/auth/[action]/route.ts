@@ -18,10 +18,11 @@ export async function POST(req:Request,{params}:{params:Promise<{action:string}>
  if(action==='register'){
   await limit('auth:register',30,3600);
   if(!['creator','clipper'].includes(b.role)||b.accepted!==true)throw new ApiError('Hesap türünü ve koşulları onayla.');
+  if(b.communityVisibility!==undefined&&!['public','hidden'].includes(b.communityVisibility))throw new ApiError('Topluluk görünürlüğünü seç.');
   const name=textValue(b.name,2,100),phone=normalizePhone(b.phone),id=crypto.randomUUID(),code=recoveryCode(),hash=await passwordHash(password);
   if(await database.prepare('SELECT 1 FROM credentials WHERE email=?').bind(email).first())throw new ApiError('Bu e-posta ile bir hesap var. Giriş yap veya kurtarma kodunu kullan.',409);
   await database.batch([
-   database.prepare('INSERT INTO users(id,email,name,phone,role,created_at) VALUES(?,?,?,?,?,?)').bind(id,email,name,phone,b.role,now()),
+   database.prepare('INSERT INTO users(id,email,name,phone,role,created_at,community_visible) VALUES(?,?,?,?,?,?,?)').bind(id,email,name,phone,b.role,now(),b.communityVisibility==='hidden'?0:1),
    database.prepare('INSERT INTO credentials(user_id,email,password_hash,recovery_hash) VALUES(?,?,?,?)').bind(id,email,hash,tokenHash(code)),
    database.prepare('INSERT INTO audit(id,actor,action,target,details,created_at) VALUES(?,?,?,?,?,?)').bind(crypto.randomUUID(),id,'onboard',id,'Hesap oluşturuldu.',now())
   ]);await createSession(id);return json({ok:true,recoveryCode:code});

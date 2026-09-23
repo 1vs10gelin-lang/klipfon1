@@ -28,7 +28,7 @@ const communityCTE = `WITH public_clips AS (
  CASE WHEN u.role='clipper' THEN k.measured ELSE c.measured END AS last_measured_at
  FROM users u LEFT JOIN clipper_stats k ON k.user_id=u.id
  LEFT JOIN creator_stats c ON c.owner_id=u.id LEFT JOIN creator_campaigns a ON a.owner_id=u.id
- WHERE u.status='active' AND u.role IN ('clipper','creator')
+ WHERE u.status='active' AND u.community_visible=1 AND u.role IN ('clipper','creator')
 ), ranked AS (
  SELECT *,CASE WHEN views>0 THEN RANK() OVER(PARTITION BY role ORDER BY views DESC) ELSE NULL END AS rank
  FROM profiles
@@ -68,7 +68,7 @@ export async function getCommunityDetail(id:string,params=new URLSearchParams())
   const creator=profile.role==='creator';
   const where=` WHERE ${creator?'c.owner_id':'k.user_id'}=? AND k.status IN ('published','settled')
     AND c.status IN ('active','paused','closed') AND u.status='active'
-    AND u.role='clipper'`;
+    AND u.role='clipper' AND u.community_visible=1`;
   const from=' FROM clips k JOIN campaigns c ON c.id=k.campaign_id JOIN users u ON u.id=k.user_id';
   const total=Number((await one('SELECT COUNT(*) AS total'+from+where,id))?.total||0);
   const requested=Number(params.get('page')||1),pages=Math.max(1,Math.ceil(total/12));

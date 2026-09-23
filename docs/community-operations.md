@@ -1,6 +1,6 @@
 # Community operations release
 
-Social account verification controls a public badge only. It does not gate account activation, community visibility, campaign participation or withdrawals. Financial and moderation checks remain in place.
+Social account verification controls a public badge only. It does not gate account activation, community visibility, campaign participation or withdrawals. A social profile URL is required only when a clipper joins a campaign. Members can choose public or hidden community visibility at registration and in their profile; hidden profile and avatar URLs are not available to other visitors. Financial and moderation checks remain in place.
 
 ## Messaging
 

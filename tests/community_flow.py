@@ -167,6 +167,15 @@ with tempfile.TemporaryDirectory(prefix='klipfon-community-') as tmp:
                 assert response.read()[8:12]==b'WEBP'
             assert request('/api/community/'+state['user']['id'])[0]['profile']['verified'] is False
             uid=state['user']['id']
+            profile['requestId']=str(uuid.uuid4());profile['communityVisibility']='hidden'
+            request('/api/action',profile,cookie)
+            request('/api/community/'+uid,expected=404)
+            request('/api/avatar/'+uid,expected=404)
+            own_avatar=urllib.request.Request(ORIGIN+'/api/avatar/'+uid,headers={'Cookie':cookie})
+            assert urllib.request.urlopen(own_avatar).headers['Content-Type']=='image/webp'
+            profile['requestId']=str(uuid.uuid4());profile['communityVisibility']='public'
+            request('/api/action',profile,cookie)
+            request('/api/community/'+uid)
             sql.execute("UPDATE users SET status='suspended' WHERE id=?",(uid,));sql.commit()
             request('/api/avatar/'+uid,expected=404)
             sql.execute("UPDATE users SET status='active' WHERE id=?",(uid,));sql.commit()

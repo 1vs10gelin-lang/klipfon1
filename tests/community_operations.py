@@ -93,6 +93,8 @@ with tempfile.TemporaryDirectory(prefix='klipfon-operations-') as tmp, tempfile.
         assert not req('/api/campaign-drafts',cookie=dc)[0]['items']
         assert db.execute('SELECT COUNT(*) FROM campaigns').fetchone()[0]==0
         assert req('/api/earnings',cookie=ac)[0]['available']==0
+        # Earnings fixtures now require a publishing profile before joining.
+        db.execute("UPDATE users SET social_url='https://youtube.com/@clippera' WHERE id=?",(a,))
         # Earnings distinguish measured estimates, pending review and settled balances.
         db.execute("INSERT INTO ledger VALUES('test-fund',?,10000000,'deposit','test',?)",(c,now))
         for phase,age in [('measuring',1),('review',15),('awaiting',22),('settled',23)]:
