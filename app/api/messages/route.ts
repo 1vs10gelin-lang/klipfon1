@@ -1,0 +1,4 @@
+import {account,apiFailure,json,checkRequest,limit} from '@/lib/server';
+import {thread,listThreads,messages,messageAction,messagingNotice} from '@/lib/messaging';
+export async function GET(req:Request){try{const u=await account(),q=new URL(req.url).searchParams;const id=q.get('id');if(id){const c=await thread(id,u);return json({conversation:c,...await messages(id,Number(q.get('before'))||Number.MAX_SAFE_INTEGER),userId:u.id,notice:messagingNotice});}return json({...await listThreads(u.id,'',Math.max(1,Math.floor(Number(q.get('page'))||1))),userId:u.id,policy:u.message_policy,notice:messagingNotice});}catch(e){return apiFailure(e)}}
+export async function POST(req:Request){try{await checkRequest(req);const u=await account();await limit('chat:'+u.id,60);const b=await req.json();if(b.action==='start')await limit('chat-start:'+u.id,10,3600);return json(await messageAction(u,b));}catch(e){return apiFailure(e)}}
