@@ -11,6 +11,12 @@
     "build": "next build --webpack",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "test": "pnpm run test:financial && pnpm run test:auth && pnpm run test:community && pnpm run test:operations && pnpm run test:onboarding",
+    "test:financial": "python3 -u tests/financial_flow.py",
+    "test:auth": "python3 -u tests/native_auth_smoke.py",
+    "test:community": "python3 -u tests/community_flow.py",
+    "test:operations": "python3 -u tests/community_operations.py",
+    "test:onboarding": "python3 -u tests/onboarding_flow.py",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
