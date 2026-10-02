@@ -108,10 +108,53 @@ Bu sürüm tek sunuculu pilot içindir. SQLite, dekontlar, oturum ve hız sını
 
 ## Doğrulama
 
+Node.js 24, pnpm 11.25.0 ve Python 3.12 kullanılır. Testler yalnızca Python
+standart kütüphanesine ihtiyaç duyar; `pip install` veya `pytest` gerekmez.
+
 ```sh
+pnpm install --frozen-lockfile
+pnpm lint
 pnpm build
-python tests/financial_flow.py
-python tests/native_auth_smoke.py
+pnpm test
 ```
 
-HTTP testi geçici bir veritabanında localhost:3017 üzerinde üretim sunucusu açar; gerçek bankaya veya üçüncü kişiye işlem göndermez. Veri şeması `drizzle/*.sql` içinden transaction ile uygulanır. Uygulanmış migration dosyalarını değiştirme; yeni SQL dosyası ekle. SQLite trigger gövdeleri tek parça yürütülür.
+`pnpm test` beş test dosyasını sırayla çalıştırır ve ilk hatada başarısız olur.
+Önce `pnpm build` çalıştırılmalıdır; HTTP testleri `.next` üretim derlemesini
+kullanır. Her HTTP testi kendi sunucusunu açıp kapatır ve ayrı geçici SQLite
+veritabanı oluşturur. Önceden `pnpm start` çalıştırma.
+
+| Komut | Test | Yerel port |
+| --- | --- | --- |
+| `pnpm test:financial` | `tests/financial_flow.py` | Sunucu gerekmez |
+| `pnpm test:auth` | `tests/native_auth_smoke.py` | 3017 |
+| `pnpm test:community` | `tests/community_flow.py` | 3018 |
+| `pnpm test:operations` | `tests/community_operations.py` | 3022 |
+| `pnpm test:onboarding` | `tests/onboarding_flow.py` | 3024 |
+
+Testler gerçek bankaya veya üçüncü kişiye işlem göndermez. Veri şeması
+`drizzle/*.sql` içinden uygulanır. Uygulanmış migration dosyalarını değiştirme;
+yeni SQL dosyası ekle. SQLite trigger gövdeleri tek parça yürütülür.
+
+### GitHub Actions
+
+`.github/workflows/ci.yml`, `main` hedefli PR'larda, `main` push'larında ve
+elle başlatıldığında çalışır. İki bağımsız kontrol vardır:
+
+- **Lint:** temiz checkout, kilit dosyasına bağlı kurulum ve mevcut `pnpm lint`.
+- **Build and Python tests:** ayrı temiz checkout/kurulum, üretim derlemesi ve
+  beş ayrı test adımı. Derleme başarısızsa testler başlamaz. Bir test başarısız
+  olsa da kalan testlerin sonucu toplanır; işin sonucu başarısız kalır.
+
+Action sürümleri commit SHA'larına sabittir. Node ve pnpm sürümleri
+`package.json` içinden okunur. Cache yalnız pnpm bağımlılık deposu içindir;
+`node_modules`, `.next` veya test veritabanları geri yüklenmez. Her çalışmada
+`--frozen-lockfile` ile kurulum yapılır; mevcut bağımlılık güvenlik politikaları
+korunur. İş/adım süre sınırları vardır ve aynı PR'ın eski çalışması iptal edilir.
+CI yalnızca `contents: read` izni kullanır; üretim sırrı, Railway erişimi veya
+harici veritabanı gerektirmez. Yayınlama yapmaz.
+
+**Başlangıç durumu:** `5d452e4` commit'inde mevcut `pnpm lint`, 114 hata ve
+18 uyarı bildirir. Bu CI değişikliği lint kurallarını gevşetmez veya hataları
+bastırmaz. Bu hatalar düzeltilene kadar **Lint** kontrolü kırmızı kalır;
+bağımsız build/test kontrolü yine çalışır. Dal koruması bu değişiklik tarafından
+değiştirilmez. Kontroller zorunlu yapılacaksa önce bu mevcut lint borcu giderilmelidir.

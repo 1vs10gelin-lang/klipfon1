@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CI: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js from package.json
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: package.json
+          package-manager-cache: false
+
+      - name: Set up pinned pnpm and dependency cache
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          # Reads pnpm@11.25.0 from packageManager; Node 24 is already available.
+          run_install: false
+          cache: true
+          cache_dependency_path: |
+            pnpm-lock.yaml
+            pnpm-workspace.yaml
+            package.json
+
+      - name: Install locked dependencies
+        run: pnpm run install:ci
+
+      - name: Run ESLint
+        run: pnpm run lint
+
+  build-and-test:
+    name: Build and Python tests
+    # Independent of lint so existing lint failures do not hide test results.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js from package.json
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: package.json
+          package-manager-cache: false
+
+      - name: Set up pinned pnpm and dependency cache
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          run_install: false
+          cache: true
+          cache_dependency_path: |
+            pnpm-lock.yaml
+            pnpm-workspace.yaml
+            package.json
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          # community_operations uses tarfile.extractall(filter='data').
+          python-version: "3.12"
+
+      - name: Install locked dependencies
+        run: pnpm run install:ci
+
+      - name: Build production application
+        id: build
+        timeout-minutes: 10
+        env:
+          DATA_DIR: ${{ runner.temp }}/klipfon-build-data
+          APP_ORIGIN: http://127.0.0.1:3000
+        run: pnpm run build
+
+      # Each HTTP suite starts/stops its own localhost server and temporary DB.
+      # Continue collecting results after a test failure, but keep the job red.
+      - name: Financial flow and concurrent reservations
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 5
+        run: pnpm run test:financial
+
+      - name: Native authentication smoke test
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 5
+        run: pnpm run test:auth
+
+      - name: Community profiles and legacy migration
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 5
+        run: pnpm run test:community
+
+      - name: Community operations and backup restore
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 5
+        run: pnpm run test:operations
+
+      - name: Member onboarding and visibility
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 5
+        run: pnpm run test:onboarding
